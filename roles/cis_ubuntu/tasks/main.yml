@@ -1,0 +1,43 @@
+- name: "CIS 5.4.1.1 | Ensure password expiration is configured"
+  lineinfile:
+    path: /etc/login.defs
+    regexp: '^PASS_MAX_DAYS'
+    line: 'PASS_MAX_DAYS {{ ubuntu_cis_password_max_days }}'
+    state: present
+    create: yes
+  tags: ['CIS', 'password']
+
+- name: "Ensure PASS_MIN_DAYS is configured"
+  lineinfile:
+    path: /etc/login.defs
+    regexp: '^PASS_MIN_DAYS'
+    line: 'PASS_MIN_DAYS {{ ubuntu_cis_password_min_days }}'
+    state: present
+    create: yes
+  tags: ['CIS', 'password']
+
+- name: "CIS 5.1.20 | Disable root login over SSH"
+  lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: '^#?PermitRootLogin'
+    line: 'PermitRootLogin no'
+    state: present
+    backup: yes
+  notify: Restart ssh
+  tags: ['CIS', 'ssh', 'root']
+
+- name: "CIS 1.3.1.1 | Ensure AppArmor is installed"
+  apt:
+    name: apparmor
+    state: present
+    update_cache: yes
+  tags: ['CIS', 'apparmor']
+
+- name: "Ensure AppArmor is enabled and running"
+  service:
+    name: apparmor
+    state: started
+    enabled: yes
+  tags: ['CIS', 'apparmor']
+
+
