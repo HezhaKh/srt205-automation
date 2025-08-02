@@ -1,0 +1,19 @@
+---
+- name: CIS Hardening on Ubuntu Systems
+  hosts: ubuntu
+  become: yes
+  vars_files:
+    - group_vars/all.yml
+    - vault/secrets.yml
+  roles:
+    - cis_ubuntu
+    - audit_compliance
+
+- name: CIS Hardening on Windows Systems
+  hosts: windows
+  gather_facts: no
+  vars_files:
+    - group_vars/all.yml
+  roles:
+    - cis_windows
+    - audit_compliance
