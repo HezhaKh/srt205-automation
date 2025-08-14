@@ -1,0 +1,17 @@
+---
+- name: Reload sshd
+  ansible.builtin.service:
+    name: ssh
+    state: reloaded
+
+- name: sysctl reload
+  ansible.posix.sysctl:
+    name: dummy
+    value: 0
+  listen: sysctl-changed
+  when: false  # placeholder to satisfy handler 'listen'
+
+- name: restart auditd
+  ansible.builtin.service:
+    name: auditd
+    state: restarted

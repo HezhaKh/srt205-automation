@@ -1,0 +1,11 @@
+---
+- name: Build audit summary (controller-side print)
+  ansible.builtin.debug:
+    msg:
+      mode: "{{ cis_mode }}"
+      missing_packages: "{{ cis_audit_missing_packages | default([]) }}"
+      login_defs: "{{ _login_defs.stdout_lines | default([]) }}"
+      pwquality: "{{ _pwq.stdout_lines | default([]) }}"
+      sshd: "{{ _sshd.stdout_lines | default([]) }}"
+      sysctl: "{{ _sysctl.stdout_lines | default([]) }}"
+      ufw: "{{ _ufw.stdout_lines | default([]) }}"

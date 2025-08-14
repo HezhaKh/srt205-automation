@@ -1,0 +1,50 @@
+---
+cis_mode: audit     # audit | enforce
+
+# SSH settings
+cis_ssh:
+  password_auth: "no"    # "yes" if things go south
+  permit_root_login: "no"
+  max_auth_tries: 4
+  x11_forwarding: "no"
+  log_level: "VERBOSE"
+  client_alive_interval: 300
+  client_alive_count_max: 3
+  port: 22
+
+# Min packages
+cis_packages:
+  - libpam-pwquality
+  - auditd
+  - ufw
+  - rsyslog
+  - unattended-upgrades
+
+# Password aging
+cis_login_defs:
+  PASS_MAX_DAYS: 90
+  PASS_MIN_DAYS: 1
+  PASS_WARN_AGE: 7
+
+# pwquality (example minima)
+cis_pwquality:
+  minlen: 12
+  dcredit: -1
+  ucredit: -1
+  lcredit: -1
+  ocredit: -1
+  retry: 3
+
+# Sysctl
+cis_sysctl:
+  kernel.randomize_va_space: 2
+  fs.suid_dumpable: 0
+  kernel.yama.ptrace_scope: 1
+
+# UFW
+cis_firewall:
+  enable: true
+  allow_ssh: true
+
+# Auditd
+cis_auditd_enable: true

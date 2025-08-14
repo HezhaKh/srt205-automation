@@ -1,0 +1,33 @@
+---
+- import_tasks: packages.yml
+  tags: [packages]
+
+- import_tasks: auth.yml
+  tags: [auth]
+
+- import_tasks: ssh.yml
+  tags: [ssh]
+
+- import_tasks: sysctl.yml
+  tags: [sysctl]
+
+- import_tasks: services.yml
+  tags: [services]
+
+- name: Build audit summary (controller-side print)
+  when: cis_mode == 'audit'
+  vars:
+    _login: "{{ login_defs_result.stdout_lines | default([]) }}"
+    _pwq:   "{{ pwquality_lines.stdout_lines | default([]) }}"
+    _sshd:  "{{ sshd_effective.stdout_lines | default([]) }}"
+    _sys:   "{{ sysctl_out.stdout_lines | default([]) }}"
+    _ufw:   "{{ ufw_status.stdout_lines | default([]) }}"
+  debug:
+    msg:
+      mode: "{{ cis_mode }}"
+      missing_packages: "{{ missing_packages | default([]) }}"
+      login_defs: "{{ _login }}"
+      pwquality: "{{ _pwq }}"
+      sshd: "{{ _sshd }}"
+      sysctl: "{{ _sys }}"
+      ufw: "{{ _ufw }}"

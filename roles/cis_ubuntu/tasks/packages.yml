@@ -1,0 +1,16 @@
+---
+- name: Install baseline packages (pwquality, auditd, ufw, rsyslog, unattended-upgrades)
+  apt:
+    name: "{{ cis_packages }}"
+    state: present
+    update_cache: yes
+  when: cis_mode == 'enforce'
+
+- name: Audit baseline packages presence
+  package_facts:
+    manager: auto
+
+- name: Record missing baseline packages (audit)
+  when: cis_mode == 'audit'
+  set_fact:
+    missing_packages: "{{ cis_packages | difference(ansible_facts.packages.keys() | list) }}"

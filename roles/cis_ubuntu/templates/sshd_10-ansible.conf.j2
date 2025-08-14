@@ -1,0 +1,13 @@
+# Managed by Ansible
+Port {{ cis_ssh.port }}
+Protocol 2
+PermitRootLogin {{ cis_ssh.permit_root_login }}
+MaxAuthTries {{ cis_ssh.max_auth_tries }}
+X11Forwarding {{ cis_ssh.x11_forwarding }}
+LogLevel {{ cis_ssh.log_level }}
+ClientAliveInterval {{ cis_ssh.client_alive_interval }}
+ClientAliveCountMax {{ cis_ssh.client_alive_count_max }}
+PasswordAuthentication {{ cis_ssh.password_auth }}
+ChallengeResponseAuthentication no
+UsePAM yes
+Subsystem sftp /usr/lib/openssh/sftp-server

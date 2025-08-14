@@ -1,0 +1,52 @@
+---
+- name: Ensure auditd is enabled and running
+  service:
+    name: auditd
+    state: started
+    enabled: true
+
+- name: Ensure rsyslog is enabled and running
+  service:
+    name: rsyslog
+    state: started
+    enabled: true
+
+# UFW — do it safely in steps
+- name: Check UFW status
+  command: ufw status
+  register: ufw_status
+  changed_when: false
+
+- name: Reset UFW rules (only when needed)
+  command: ufw --force reset
+  when: "'inactive' in ufw_status.stdout"
+
+- name: Set default deny inbound
+  command: ufw default deny incoming
+  register: ufw_default
+  changed_when: "'changed' in ufw_default.stdout | lower or 'policy changed' in ufw_default.stdout | lower"
+
+- name: Allow SSH port
+  ansible.builtin.command: "ufw allow {{ cis_ssh.port | default(22) }}/tcp"
+  register: ufw_allow
+  changed_when: >
+    ('added' in (ufw_allow.stdout | default(''))) or
+    ('updated' in (ufw_allow.stdout | default('')))
+  when: cis_firewall.enable | default(true)
+
+- name: Enable UFW (only if inactive)
+  command: ufw --force enable
+  when: "'inactive' in ufw_status.stdout"
+
+- name: Audit UFW status
+  command: ufw status verbose
+  register: ufw_status
+  changed_when: false
+  when: cis_mode == 'audit'
+
+# unattended-upgrades tends to be enabled by default on Ubuntu
+- name: Ensure unattended-upgrades service is enabled
+  service:
+    name: unattended-upgrades
+    state: started
+    enabled: true

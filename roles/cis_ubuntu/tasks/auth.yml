@@ -1,0 +1,37 @@
+---
+# /etc/login.defs
+- name: Configure password aging in /etc/login.defs
+  lineinfile:
+    path: /etc/login.defs
+    regexp: "^{{ item.key }}\\b"
+    line: "{{ item.key }}\t{{ item.value }}"
+    state: present
+    backrefs: false
+  loop: "{{ cis_login_defs | dict2items }}"
+  when: cis_mode == 'enforce'
+
+- name: Audit password aging values
+  command: "awk '/^(PASS_MAX_DAYS|PASS_MIN_DAYS|PASS_WARN_AGE)/{print}' /etc/login.defs"
+  register: login_defs_result
+  changed_when: false
+  failed_when: false
+  when: cis_mode == 'audit'
+
+# /etc/security/pwquality.conf
+- name: Configure pwquality minimums
+  lineinfile:
+    path: /etc/security/pwquality.conf
+    regexp: "^{{ item.key }}\\s*="
+    line: "{{ item.key }} = {{ item.value }}"
+    state: present
+    backrefs: false
+    create: yes
+  loop: "{{ cis_pwquality | dict2items }}"
+  when: cis_mode == 'enforce'
+
+- name: Audit pwquality.conf
+  shell: "grep -E '^(minlen|dcredit|ucredit|lcredit|ocredit|retry)\\s*=' /etc/security/pwquality.conf || true"
+  register: pwquality_lines
+  changed_when: false
+  failed_when: false
+  when: cis_mode == 'audit'

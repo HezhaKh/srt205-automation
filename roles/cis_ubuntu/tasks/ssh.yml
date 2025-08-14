@@ -1,0 +1,30 @@
+---
+# Clean any previous ansible drop-ins
+- name: Remove older ansible sshd drop-ins
+  file:
+    path: "{{ item }}"
+    state: absent
+  loop:
+#    - /etc/ssh/sshd_config.d/99-ansible.conf
+    - /etc/ssh/sshd_config.d/10-ansible.conf
+  when: cis_mode == 'enforce'
+
+- name: Template hardened sshd drop-in
+  template:
+    src: sshd_10-ansible.conf.j2
+    dest: /etc/ssh/sshd_config.d/10-ansible.conf
+    mode: "0644"
+  notify: Reload sshd
+  when: cis_mode == 'enforce'
+
+- name: Audit sshd effective settings
+  shell: "sshd -T 2>/dev/null | egrep '^(permitrootlogin|maxauthtries|x11forwarding|loglevel|clientaliveinterval|clientalivecountmax|port|passwordauthentication)'"
+  register: sshd_effective
+  changed_when: false
+  failed_when: false
+  when: cis_mode == 'audit'
+
+- name: Normalize sshd audit lines for report
+  set_fact:
+    sshd_effective: "{{ sshd_effective }}"
+  when: cis_mode == 'audit'

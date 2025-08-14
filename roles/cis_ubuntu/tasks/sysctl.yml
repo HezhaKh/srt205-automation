@@ -1,0 +1,44 @@
+---
+# 6) ASLR
+- name: Ensure ASLR is enabled
+  ansible.posix.sysctl:
+    name: kernel.randomize_va_space
+    value: "2"
+    state: present
+    sysctl_set: true
+    reload: true
+  when: cis_mode == 'enforce'
+  notify: sysctl-changed
+  tags: [cis_1_5_1]
+
+# 7) Core dumps restricted
+- name: Restrict core dumps
+  ansible.posix.sysctl:
+    name: fs.suid_dumpable
+    value: "0"
+    state: present
+    sysctl_set: true
+    reload: true
+  when: cis_mode == 'enforce'
+  notify: sysctl-changed
+  tags: [cis_1_6_*]
+
+# 8) ptrace scope
+- name: Restrict ptrace_scope
+  ansible.posix.sysctl:
+    name: kernel.yama.ptrace_scope
+    value: "1"
+    state: present
+    sysctl_set: true
+    reload: true
+  when: cis_mode == 'enforce'
+  notify: sysctl-changed
+  tags: [cis_1_6_*]
+
+# Audit sysctls
+- name: Audit kernel/sysctl hardening
+  ansible.builtin.shell: |
+    sysctl kernel.randomize_va_space fs.suid_dumpable kernel.yama.ptrace_scope 2>/dev/null || true
+  register: _sysctl
+  changed_when: false
+  when: cis_mode == 'audit'

@@ -1,0 +1,8 @@
+---
+- name: CIS Ubuntu
+  hosts: linux_servers
+  gather_facts: true
+  vars:
+    cis_mode: enforce   # 'audit' for audit-only runs
+  roles:
+    - cis_ubuntu
