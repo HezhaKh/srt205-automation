@@ -1,0 +1,219 @@
+
+PLAY [CIS Ubuntu] **************************************************************
+
+TASK [Gathering Facts] *********************************************************
+ok: [db_node01]
+
+TASK [cis_ubuntu : Install baseline packages (pwquality, auditd, ufw, rsyslog, unattended-upgrades)] ***
+ok: [db_node01]
+
+TASK [cis_ubuntu : Audit baseline packages presence] ***************************
+ok: [db_node01]
+
+TASK [cis_ubuntu : Record missing baseline packages (audit)] *******************
+skipping: [db_node01]
+
+TASK [cis_ubuntu : Configure password aging in /etc/login.defs] ****************
+ok: [db_node01] => (item={'key': 'PASS_MAX_DAYS', 'value': 90})
+ok: [db_node01] => (item={'key': 'PASS_MIN_DAYS', 'value': 1})
+ok: [db_node01] => (item={'key': 'PASS_WARN_AGE', 'value': 7})
+
+TASK [cis_ubuntu : Audit password aging values] ********************************
+ok: [db_node01]
+
+TASK [cis_ubuntu : Configure pwquality minimums] *******************************
+ok: [db_node01] => (item={'key': 'minlen', 'value': 12})
+ok: [db_node01] => (item={'key': 'dcredit', 'value': -1})
+ok: [db_node01] => (item={'key': 'ucredit', 'value': -1})
+ok: [db_node01] => (item={'key': 'lcredit', 'value': -1})
+ok: [db_node01] => (item={'key': 'ocredit', 'value': -1})
+ok: [db_node01] => (item={'key': 'retry', 'value': 3})
+
+TASK [cis_ubuntu : Audit pwquality.conf] ***************************************
+ok: [db_node01]
+
+TASK [cis_ubuntu : Ensure sudo logging is configured via drop-in] **************
+ok: [db_node01]
+
+TASK [cis_ubuntu : Ensure sudo log file exists with secure perms] **************
+changed: [db_node01]
+
+TASK [cis_ubuntu : Audit sudo logging] *****************************************
+ok: [db_node01]
+
+TASK [cis_ubuntu : Template hardened sshd drop-in] *****************************
+ok: [db_node01]
+
+TASK [cis_ubuntu : Audit sshd effective settings] ******************************
+ok: [db_node01]
+
+TASK [cis_ubuntu : Normalize sshd audit lines for report] **********************
+ok: [db_node01]
+
+TASK [cis_ubuntu : Ensure ASLR is enabled] *************************************
+ok: [db_node01]
+
+TASK [cis_ubuntu : Restrict core dumps] ****************************************
+ok: [db_node01]
+
+TASK [cis_ubuntu : Restrict ptrace_scope] **************************************
+ok: [db_node01]
+
+TASK [cis_ubuntu : Audit kernel/sysctl hardening] ******************************
+ok: [db_node01]
+
+TASK [cis_ubuntu : Ensure auditd is enabled and running] ***********************
+ok: [db_node01]
+
+TASK [cis_ubuntu : Ensure rsyslog is enabled and running] **********************
+ok: [db_node01]
+
+TASK [cis_ubuntu : Ensure unattended-upgrades service is enabled] **************
+ok: [db_node01]
+
+TASK [cis_ubuntu : Check UFW status (verbose)] *********************************
+ok: [db_node01]
+
+TASK [cis_ubuntu : Reset UFW rules (only when needed)] *************************
+skipping: [db_node01]
+
+TASK [cis_ubuntu : Set default deny inbound] ***********************************
+skipping: [db_node01]
+
+TASK [cis_ubuntu : Allow SSH port] *********************************************
+ok: [db_node01]
+
+TASK [cis_ubuntu : Enable UFW (only if inactive)] ******************************
+skipping: [db_node01]
+
+TASK [cis_ubuntu : Remove cron.deny and at.deny] *******************************
+ok: [db_node01] => (item=/etc/cron.deny)
+ok: [db_node01] => (item=/etc/at.deny)
+
+TASK [cis_ubuntu : Ensure cron.allow exists and only allows root] **************
+ok: [db_node01]
+
+TASK [cis_ubuntu : Ensure at.allow exists and only allows root] ****************
+ok: [db_node01]
+
+TASK [cis_ubuntu : Check if /tmp has an fstab entry] ***************************
+ok: [db_node01]
+
+TASK [cis_ubuntu : Update /tmp options in /etc/fstab to include nodev,nosuid,noexec] ***
+skipping: [db_node01]
+
+TASK [cis_ubuntu : Remount /tmp with secure options] ***************************
+skipping: [db_node01]
+
+TASK [cis_ubuntu : Enable and start systemd-timesyncd] *************************
+ok: [db_node01]
+
+TASK [cis_ubuntu : Disable/stop chrony if present] *****************************
+ok: [db_node01]
+
+TASK [cis_ubuntu : Disable/stop ntp if present] ********************************
+ok: [db_node01]
+
+TASK [cis_ubuntu : Audit UFW status] *******************************************
+ok: [db_node01]
+
+TASK [cis_ubuntu : Audit cron/at allow/deny] ***********************************
+ok: [db_node01]
+
+TASK [cis_ubuntu : Audit /tmp mount options] ***********************************
+ok: [db_node01]
+
+TASK [cis_ubuntu : Audit time sync services] ***********************************
+ok: [db_node01]
+
+TASK [cis_ubuntu : Build audit summary (controller-side print)] ****************
+ok: [db_node01] => {
+    "msg": {
+        "cron_at": [
+            "-rw------- 1 root root 5 Aug 15 04:38 /etc/at.allow",
+            "-rw------- 1 root root 5 Aug 15 04:38 /etc/cron.allow"
+        ],
+        "login_defs": [
+            "PASS_MAX_DAYS\t90",
+            "PASS_MIN_DAYS\t1",
+            "PASS_WARN_AGE\t7"
+        ],
+        "missing_packages": [],
+        "mode": "enforce",
+        "pwquality": [
+            "minlen = 12",
+            "dcredit = -1",
+            "ucredit = -1",
+            "lcredit = -1",
+            "ocredit = -1",
+            "retry = 3"
+        ],
+        "sshd": [],
+        "sudo_log": [
+            "/etc/sudoers.d/10-logfile:Defaults logfile=/var/log/sudo.log",
+            "-rw-r----- 1 root adm 61338 Aug 15 04:54 /var/log/sudo.log"
+        ],
+        "sysctl": [
+            "kernel.randomize_va_space = 2",
+            "fs.suid_dumpable = 0",
+            "kernel.yama.ptrace_scope = 1"
+        ],
+        "timesync": [
+            "enabled",
+            "active",
+            "not-found",
+            "not-found"
+        ],
+        "tmp_mount": [],
+        "ufw": [
+            "Status: active",
+            "Logging: on (low)",
+            "Default: deny (incoming), allow (outgoing), disabled (routed)",
+            "New profiles: skip",
+            "",
+            "To                         Action      From",
+            "--                         ------      ----",
+            "22/tcp                     ALLOW IN    Anywhere                  ",
+            "22/tcp (v6)                ALLOW IN    Anywhere (v6)             "
+        ]
+    }
+}
+
+TASK [audit_compliance : Ensure report directory exists (controller)] **********
+ok: [db_node01 -> localhost]
+
+TASK [audit_compliance : Initialize non_compliant_items] ***********************
+ok: [db_node01]
+
+TASK [audit_compliance : Normalize audit vars to line lists] *******************
+ok: [db_node01]
+
+TASK [audit_compliance : Find SSHD MaxAuthTries line] **************************
+ok: [db_node01]
+
+TASK [audit_compliance : Parse SSHD MaxAuthTries (robust)] *********************
+ok: [db_node01]
+
+TASK [audit_compliance : Evaluate SSHD controls] *******************************
+ok: [db_node01]
+
+TASK [audit_compliance : Evaluate sysctl controls] *****************************
+ok: [db_node01]
+
+TASK [audit_compliance : Evaluate UFW] *****************************************
+ok: [db_node01]
+
+TASK [audit_compliance : Evaluate sudo logging] ********************************
+ok: [db_node01]
+
+TASK [audit_compliance : Render compliance report (controller)] ****************
+changed: [db_node01 -> localhost]
+
+TASK [audit_compliance : Show report path (controller)] ************************
+ok: [db_node01 -> localhost] => {
+    "msg": "Report: /home/hkhoshnoud/srt205/repo/srt205-project/reports/compliance_report_db_node01_2025-08-15.md"
+}
+
+PLAY RECAP *********************************************************************
+db_node01                  : ok=45   changed=2    unreachable=0    failed=0    skipped=6    rescued=0    ignored=0   
+

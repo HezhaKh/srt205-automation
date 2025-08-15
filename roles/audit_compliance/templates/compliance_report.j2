@@ -1,35 +1,106 @@
 # CIS Compliance Report for {{ inventory_hostname }}
 
-**Date:** {{ ansible_date_time.date }}
-**Mode:** {{ cis_mode }}
+**Date:** {{ ansible_date_time.date if ansible_date_time is defined else 'N/A' }}
+**Mode:** {{ cis_mode | default('audit') }}
+
+{# ---- Normalize each registered var into a list of lines ---- #}
+{% set login_defs_lines = (
+    _login_defs.stdout_lines if _login_defs is defined and _login_defs is mapping and _login_defs.stdout_lines is defined
+    else (_login_defs.stdout.splitlines() if _login_defs is defined and _login_defs is mapping and _login_defs.stdout is defined
+    else (_login_defs if _login_defs is defined and _login_defs is sequence and not (_login_defs is string)
+    else ([_login_defs] if _login_defs is defined and _login_defs is string else [])))
+) %}
+
+{% set pwq_lines = (
+    _pwq.stdout_lines if _pwq is defined and _pwq is mapping and _pwq.stdout_lines is defined
+    else (_pwq.stdout.splitlines() if _pwq is defined and _pwq is mapping and _pwq.stdout is defined
+    else (_pwq if _pwq is defined and _pwq is sequence and not (_pwq is string)
+    else ([_pwq] if _pwq is defined and _pwq is string else [])))
+) %}
+
+{% set sshd_lines = (
+    _sshd.stdout_lines if _sshd is defined and _sshd is mapping and _sshd.stdout_lines is defined
+    else (_sshd.stdout.splitlines() if _sshd is defined and _sshd is mapping and _sshd.stdout is defined
+    else (_sshd if _sshd is defined and _sshd is sequence and not (_sshd is string)
+    else ([_sshd] if _sshd is defined and _sshd is string else [])))
+) %}
+
+{% set sysctl_lines = (
+    _sysctl.stdout_lines if _sysctl is defined and _sysctl is mapping and _sysctl.stdout_lines is defined
+    else (_sysctl.stdout.splitlines() if _sysctl is defined and _sysctl is mapping and _sysctl.stdout is defined
+    else (_sysctl if _sysctl is defined and _sysctl is sequence and not (_sysctl is string)
+    else ([_sysctl] if _sysctl is defined and _sysctl is string else [])))
+) %}
+
+{% set ufw_lines = (
+    _ufw.stdout_lines if _ufw is defined and _ufw is mapping and _ufw.stdout_lines is defined
+    else (_ufw.stdout.splitlines() if _ufw is defined and _ufw is mapping and _ufw.stdout is defined
+    else (_ufw if _ufw is defined and _ufw is sequence and not (_ufw is string)
+    else ([_ufw] if _ufw is defined and _ufw is string else [])))
+) %}
+
+{% set cron_at_lines = (
+    _cron_at.stdout_lines if _cron_at is defined and _cron_at is mapping and _cron_at.stdout_lines is defined
+    else (_cron_at.stdout.splitlines() if _cron_at is defined and _cron_at is mapping and _cron_at.stdout is defined
+    else (_cron_at if _cron_at is defined and _cron_at is sequence and not (_cron_at is string)
+    else ([_cron_at] if _cron_at is defined and _cron_at is string else [])))
+) %}
+
+{% set tmp_mount_lines = (
+    _tmp_mount.stdout_lines if _tmp_mount is defined and _tmp_mount is mapping and _tmp_mount.stdout_lines is defined
+    else (_tmp_mount.stdout.splitlines() if _tmp_mount is defined and _tmp_mount is mapping and _tmp_mount.stdout is defined
+    else (_tmp_mount if _tmp_mount is defined and _tmp_mount is sequence and not (_tmp_mount is string)
+    else ([_tmp_mount] if _tmp_mount is defined and _tmp_mount is string else [])))
+) %}
+
+{% set timesync_lines = (
+    _timesync.stdout_lines if _timesync is defined and _timesync is mapping and _timesync.stdout_lines is defined
+    else (_timesync.stdout.splitlines() if _timesync is defined and _timesync is mapping and _timesync.stdout is defined
+    else (_timesync if _timesync is defined and _timesync is sequence and not (_timesync is string)
+    else ([_timesync] if _timesync is defined and _timesync is string else [])))
+) %}
+
+{% set sudo_log_lines = (
+    _sudo_log.stdout_lines if _sudo_log is defined and _sudo_log is mapping and _sudo_log.stdout_lines is defined
+    else (_sudo_log.stdout.splitlines() if _sudo_log is defined and _sudo_log is mapping and _sudo_log.stdout is defined
+    else (_sudo_log if _sudo_log is defined and _sudo_log is sequence and not (_sudo_log is string)
+    else ([_sudo_log] if _sudo_log is defined and _sudo_log is string else [])))
+) %}
 
 ---
 
 ## Summary of Security Configurations
-- Password Aging: {{ _login_defs.stdout_lines | join(', ') if _login_defs is defined else 'N/A' }}
-- Password Quality: {{ _pwq.stdout_lines | join(', ') if _pwq is defined else 'N/A' }}
-- SSHD Config: {{ _sshd.stdout_lines | join(', ') if _sshd is defined else 'N/A' }}
-- Sysctl Settings: {{ _sysctl.stdout_lines | join(', ') if _sysctl is defined else 'N/A' }}
-- UFW Status: {{ _ufw.stdout_lines | join(', ') if _ufw is defined else 'N/A' }}
+- Password Aging: {{ login_defs_lines | join(', ') if login_defs_lines else 'N/A' }}
+- Password Quality: {{ pwq_lines | join(', ') if pwq_lines else 'N/A' }}
+- SSHD Config: {{ sshd_lines | join(', ') if sshd_lines else 'N/A' }}
+- Sysctl Settings: {{ sysctl_lines | join(', ') if sysctl_lines else 'N/A' }}
+- UFW Status: {{
+  (ufw_lines | select('search','^Status:') | list | first | default('N/A'))
+  ~ '; ' ~
+  (ufw_lines | select('search','^Logging:') | list | first | default(''))
+  ~ '; ' ~
+  (ufw_lines | select('search','^Default:') | list | first | default(''))
+}}
 
-{% if _cron_at is defined %}
+
+{% if cron_at_lines %}
 ## Cron & At Restrictions
-{{ _cron_at.stdout_lines | join('\n') }}
+{{ cron_at_lines | join('\n') }}
 {% endif %}
 
-{% if _tmp_mount is defined %}
+{% if tmp_mount_lines %}
 ## /tmp Mount Options
-{{ _tmp_mount.stdout_lines | join('\n') }}
+{{ tmp_mount_lines | join('\n') }}
 {% endif %}
 
-{% if _timesync is defined %}
+{% if timesync_lines %}
 ## Time Synchronization
-{{ _timesync.stdout_lines | join('\n') }}
+{{ timesync_lines | join('\n') }}
 {% endif %}
 
-{% if _sudo_log is defined %}
+{% if sudo_log_lines %}
 ## Sudo Logging
-{{ _sudo_log.stdout_lines | join('\n') }}
+{{ sudo_log_lines | join('\n') }}
 {% endif %}
 
 ---
@@ -40,4 +111,3 @@
 {% else %}
 No non-compliance detected.
 {% endif %}
-

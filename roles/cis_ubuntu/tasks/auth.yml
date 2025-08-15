@@ -66,4 +66,3 @@
   args: { executable: /bin/bash }
   register: _sudo_log
   changed_when: false
-

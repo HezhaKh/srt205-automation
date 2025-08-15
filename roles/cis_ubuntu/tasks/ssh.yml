@@ -21,14 +21,19 @@
     mode: '0644'
   notify: Reload sshd
 
+# Audit
+# Get effective sshd config (resolve conditionals with -C)
 - name: Audit sshd effective settings
-  shell: "sshd -T 2>/dev/null | egrep '^(permitrootlogin|maxauthtries|x11forwarding|loglevel|clientaliveinterval|clientalivecountmax|port|passwordauthentication)'"
-  register: sshd_effective
+  ansible.builtin.command: >
+    sshd -T
+    -C user=root
+    -C host={{ ansible_facts.fqdn | default('localhost') }}
+    -C addr=127.0.0.1
+  register: _sshd_t
   changed_when: false
-  failed_when: false
-  when: cis_mode == 'audit'
 
+# Normalize to a simple lowercase list (no filtering so it never comes back empty)
 - name: Normalize sshd audit lines for report
-  set_fact:
-    sshd_effective: "{{ sshd_effective }}"
-  when: cis_mode == 'audit'
+  ansible.builtin.set_fact:
+    _sshd: "{{ _sshd_t.stdout | trim | split('\n') | map('lower') | list }}"
+  changed_when: false

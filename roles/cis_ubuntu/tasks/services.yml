@@ -45,12 +45,6 @@
   ansible.builtin.command: ufw --force enable
   when: ufw_status.stdout is search('(?m)^Status:\s+inactive')
 
-# Audit
-- name: Audit UFW status
-  ansible.builtin.command: ufw status verbose
-  register: ufw_status
-  changed_when: false
-
 # Restrict cron/at access 
 - name: Remove cron.deny and at.deny
   ansible.builtin.file:
@@ -81,13 +75,6 @@
     backup: yes
   when: cis_mode == 'enforce'
 
-# Audit
-- name: Audit cron/at allow/deny
-  ansible.builtin.shell: |
-    ls -l /etc/cron.allow /etc/at.allow 2>/dev/null || true
-  args: { executable: /bin/bash }
-  register: _cron_at
-  changed_when: false
 
 # Enforce /tmp mount options
 - name: Check if /tmp has an fstab entry
@@ -114,12 +101,6 @@
     - cis_mode == 'enforce'
     - _fstab_tmp.stdout | length > 0
 
-# Audit
-- name: Audit /tmp mount options
-  ansible.builtin.command: findmnt -no OPTIONS /tmp
-  register: _tmp_mount
-  changed_when: false
-  failed_when: false
 
 # Ensure a single time sync daemon is in use
 - name: Enable and start systemd-timesyncd
@@ -147,7 +128,28 @@
   failed_when: false
   when: cis_mode == 'enforce'
 
-# Audit
+# UFW audit
+- name: Audit UFW status
+  ansible.builtin.command: ufw status verbose
+  register: _ufw
+  changed_when: false
+
+# Cron/At audit
+- name: Audit cron/at allow/deny
+  ansible.builtin.shell: |
+    ls -l /etc/cron.allow /etc/at.allow 2>/dev/null || true
+  args: { executable: /bin/bash }
+  register: _cron_at
+  changed_when: false
+
+# /tmp audit (pipe-free, portable)
+- name: Audit /tmp mount options
+  ansible.builtin.command: findmnt -no OPTIONS /tmp
+  register: _tmp_mount
+  changed_when: false
+  failed_when: false
+
+# Time sync audit
 - name: Audit time sync services
   ansible.builtin.shell: |
     systemctl is-enabled systemd-timesyncd || true

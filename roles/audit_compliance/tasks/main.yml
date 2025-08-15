@@ -10,6 +10,113 @@
   become: false
   run_once: false
 
+# Build non-compliance list from audit vars
+- name: Initialize non_compliant_items
+  ansible.builtin.set_fact:
+    non_compliant_items: []
+
+- name: Normalize audit vars to line lists
+  ansible.builtin.set_fact:
+    login_defs_lines: >-
+      {{
+        _login_defs.stdout_lines if (_login_defs is mapping and _login_defs.stdout_lines is defined) else
+        (_login_defs if (_login_defs is sequence and not (_login_defs is string)) else [])
+      }}
+    pwq_lines: >-
+      {{
+        _pwq.stdout_lines if (_pwq is mapping and _pwq.stdout_lines is defined) else
+        (_pwq if (_pwq is sequence and not (_pwq is string)) else [])
+      }}
+    # Prefer your normalized _sshd if present; else fall back to raw sshd -T output
+    sshd_lines: >-
+      {{
+        (
+          _sshd
+          if (_sshd is defined and _sshd is sequence and not (_sshd is string))
+          else (_sshd_t.stdout_lines if (_sshd_t is defined and _sshd_t.stdout_lines is defined) else [])
+        )
+        | map('lower') | list
+      }}
+    sysctl_lines: >-
+      {{
+        _sysctl.stdout_lines if (_sysctl is mapping and _sysctl.stdout_lines is defined) else
+        (_sysctl if (_sysctl is sequence and not (_sysctl is string)) else [])
+      }}
+    ufw_lines: >-
+      {{
+        _ufw.stdout_lines if (_ufw is mapping and _ufw.stdout_lines is defined) else
+        (_ufw if (_ufw is sequence and not (_ufw is string)) else [])
+      }}
+    cron_at_lines: >-
+      {{
+        _cron_at.stdout_lines if (_cron_at is mapping and _cron_at.stdout_lines is defined) else
+        (_cron_at if (_cron_at is sequence and not (_cron_at is string)) else [])
+      }}
+    tmp_mount_lines: >-
+      {{
+        _tmp_mount.stdout_lines if (_tmp_mount is mapping and _tmp_mount.stdout_lines is defined) else
+        (_tmp_mount if (_tmp_mount is sequence and not (_tmp_mount is string)) else [])
+      }}
+    timesync_lines: >-
+      {{
+        _timesync.stdout_lines if (_timesync is mapping and _timesync.stdout_lines is defined) else
+        (_timesync if (_timesync is sequence and not (_timesync is string)) else [])
+      }}
+    sudo_log_lines: >-
+      {{
+        _sudo_log.stdout_lines if (_sudo_log is mapping and _sudo_log.stdout_lines is defined) else
+        (_sudo_log if (_sudo_log is sequence and not (_sudo_log is string)) else [])
+      }}
+
+# 1-Find the MaxAuthTries line safely
+- name: Find SSHD MaxAuthTries line
+  ansible.builtin.set_fact:
+    _maxauth_line: "{{ (sshd_lines | select('match', '^maxauthtries\\s+\\d+') | list | first | default('maxauthtries 999')) }}"
+  when: sshd_lines is defined and (sshd_lines | length > 0)
+
+# 2-Extract the integer using regex_replace
+- name: Parse SSHD MaxAuthTries (robust)
+  ansible.builtin.set_fact:
+    sshd_maxauthtries: "{{ (_maxauth_line | regex_replace('^maxauthtries\\s+(\\d+).*', '\\1')) | int }}"
+  when: _maxauth_line is defined
+
+- name: Evaluate SSHD controls
+  ansible.builtin.set_fact:
+    non_compliant_items: "{{ non_compliant_items
+      + (['SSHD: PermitRootLogin is not disabled'] if not (sshd_lines | select('search','^permitrootlogin\\s+no') | list) else [])
+      + (['SSHD: PasswordAuthentication is not disabled'] if not (sshd_lines | select('search','^passwordauthentication\\s+no') | list) else [])
+      + (['SSHD: MaxAuthTries > 4'] if (sshd_maxauthtries | default(999) | int) > 4 else [])
+    }}"
+  when: sshd_lines is defined and (sshd_lines | length > 0)
+
+- name: Evaluate sysctl controls
+  ansible.builtin.set_fact:
+    non_compliant_items: "{{ non_compliant_items
+      + (['Sysctl: ASLR not set to 2'] if not (sysctl_lines | select('search','kernel.randomize_va_space\\s*=\\s*2') | list) else [])
+      + (['Sysctl: core dumps not restricted'] if not (sysctl_lines | select('search','fs\\.suid_dumpable\\s*=\\s*0') | list) else [])
+      + (['Sysctl: ptrace_scope not restricted'] if not (sysctl_lines | select('search','kernel\\.yama\\.ptrace_scope\\s*=\\s*1') | list) else [])
+    }}"
+  when: sysctl_lines is defined
+
+- name: Evaluate UFW
+  ansible.builtin.set_fact:
+    non_compliant_items: "{{ non_compliant_items
+      + (['UFW: firewall not active'] if not (ufw_lines | select('search','^Status:\\s+active') | list) else [])
+      + (['UFW: default incoming not deny'] if not (ufw_lines | select('search','^Default:\\s+deny \\(incoming\\)') | list) else [])
+    }}"
+  when: ufw_lines is defined
+
+- name: Evaluate sudo logging
+  ansible.builtin.set_fact:
+    non_compliant_items: "{{ non_compliant_items
+      + (
+          []
+          if ((sudo_log_lines | join('\n')) | regex_search('logfile='))
+          else ['Sudo: logfile not configured']
+        )
+    }}"
+  when: sudo_log_lines is defined
+
 - name: Render compliance report (controller)
   ansible.builtin.template:
     src: compliance_report.j2
