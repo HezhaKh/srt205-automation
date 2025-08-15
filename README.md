@@ -1,5 +1,5 @@
 ### How to run (Ubuntu role)
-Prereqs: Ansible 2.15+ (or 2.18+), SSH access to targets, Python 3 on hosts.
+Prereqs: Ansible, SSH access to targets, Python 3 on hosts.
 
 **Inventory:** `inventory/hosts.ini`
 
