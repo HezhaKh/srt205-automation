@@ -1,0 +1,27 @@
+---
+# Write a Markdown report to the controller (not the remote host)
+
+- name: Ensure report directory exists (controller)
+  ansible.builtin.file:
+    path: "{{ report_output_dir }}"
+    state: directory
+    mode: "0755"
+  delegate_to: localhost
+  become: false
+  run_once: false
+
+- name: Render compliance report (controller)
+  ansible.builtin.template:
+    src: compliance_report.j2
+    dest: "{{ report_output_dir }}/{{ report_filename }}"
+    mode: "0644"
+  delegate_to: localhost
+  become: false
+  run_once: false
+
+- name: Show report path (controller)
+  ansible.builtin.debug:
+    msg: "Report: {{ report_output_dir }}/{{ report_filename }}"
+  delegate_to: localhost
+  become: false
+  run_once: false

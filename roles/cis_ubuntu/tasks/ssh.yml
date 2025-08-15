@@ -1,21 +1,25 @@
 ---
-# Clean any previous ansible drop-ins
-- name: Remove older ansible sshd drop-ins
-  file:
-    path: "{{ item }}"
-    state: absent
-  loop:
-#    - /etc/ssh/sshd_config.d/99-ansible.conf
-    - /etc/ssh/sshd_config.d/10-ansible.conf
-  when: cis_mode == 'enforce'
+# I think this is better code hygin but also a idempotence automation killer!
+#- name: Check if legacy drop-in exists
+#  ansible.builtin.stat:
+#    path: /etc/ssh/sshd_config.d/*ansible*
+#  register: _old_dropin
 
+#- name: Remove legacy drop-in
+#  ansible.builtin.file:
+#    path: "{{ _old_dropin.stat.path }}"
+#    state: absent
+#  when: _old_dropin.stat.exists
+
+# Changes when file content is actually modified
 - name: Template hardened sshd drop-in
-  template:
+  ansible.builtin.template:
     src: sshd_10-ansible.conf.j2
     dest: /etc/ssh/sshd_config.d/10-ansible.conf
-    mode: "0644"
+    owner: root
+    group: root
+    mode: '0644'
   notify: Reload sshd
-  when: cis_mode == 'enforce'
 
 - name: Audit sshd effective settings
   shell: "sshd -T 2>/dev/null | egrep '^(permitrootlogin|maxauthtries|x11forwarding|loglevel|clientaliveinterval|clientalivecountmax|port|passwordauthentication)'"

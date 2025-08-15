@@ -1,18 +1,8 @@
 ---
-cis_mode: audit     # audit | enforce
+# Mode: 'audit' (report-only) or 'enforce' (make changes)
+cis_mode: audit
 
-# SSH settings
-cis_ssh:
-  password_auth: "no"    # "yes" if things go south
-  permit_root_login: "no"
-  max_auth_tries: 4
-  x11_forwarding: "no"
-  log_level: "VERBOSE"
-  client_alive_interval: 300
-  client_alive_count_max: 3
-  port: 22
-
-# Min packages
+# Baseline packages required for this role
 cis_packages:
   - libpam-pwquality
   - auditd
@@ -20,13 +10,13 @@ cis_packages:
   - rsyslog
   - unattended-upgrades
 
-# Password aging
-cis_login_defs:
+# Password aging values for /etc/login.defs
+cis_password_aging:
   PASS_MAX_DAYS: 90
   PASS_MIN_DAYS: 1
   PASS_WARN_AGE: 7
 
-# pwquality (example minima)
+# pwquality minimums (/etc/security/pwquality.conf)
 cis_pwquality:
   minlen: 12
   dcredit: -1
@@ -35,16 +25,6 @@ cis_pwquality:
   ocredit: -1
   retry: 3
 
-# Sysctl
-cis_sysctl:
-  kernel.randomize_va_space: 2
-  fs.suid_dumpable: 0
-  kernel.yama.ptrace_scope: 1
-
-# UFW
-cis_firewall:
-  enable: true
-  allow_ssh: true
-
-# Auditd
-cis_auditd_enable: true
+# SSH hardening
+cis_ssh_port: 22
+cis_sshd_dropin_path: /etc/ssh/sshd_config.d/10-ansible.conf

@@ -1,0 +1,43 @@
+# CIS Compliance Report for {{ inventory_hostname }}
+
+**Date:** {{ ansible_date_time.date }}
+**Mode:** {{ cis_mode }}
+
+---
+
+## Summary of Security Configurations
+- Password Aging: {{ _login_defs.stdout_lines | join(', ') if _login_defs is defined else 'N/A' }}
+- Password Quality: {{ _pwq.stdout_lines | join(', ') if _pwq is defined else 'N/A' }}
+- SSHD Config: {{ _sshd.stdout_lines | join(', ') if _sshd is defined else 'N/A' }}
+- Sysctl Settings: {{ _sysctl.stdout_lines | join(', ') if _sysctl is defined else 'N/A' }}
+- UFW Status: {{ _ufw.stdout_lines | join(', ') if _ufw is defined else 'N/A' }}
+
+{% if _cron_at is defined %}
+## Cron & At Restrictions
+{{ _cron_at.stdout_lines | join('\n') }}
+{% endif %}
+
+{% if _tmp_mount is defined %}
+## /tmp Mount Options
+{{ _tmp_mount.stdout_lines | join('\n') }}
+{% endif %}
+
+{% if _timesync is defined %}
+## Time Synchronization
+{{ _timesync.stdout_lines | join('\n') }}
+{% endif %}
+
+{% if _sudo_log is defined %}
+## Sudo Logging
+{{ _sudo_log.stdout_lines | join('\n') }}
+{% endif %}
+
+---
+
+## Non-Compliant Issues
+{% if non_compliant_items is defined and non_compliant_items %}
+- {{ non_compliant_items | join('\n- ') }}
+{% else %}
+No non-compliance detected.
+{% endif %}
+

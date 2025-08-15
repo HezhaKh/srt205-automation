@@ -1,8 +1,13 @@
 ---
 - name: CIS Ubuntu
   hosts: linux_servers
+  become: true
   gather_facts: true
+
   vars:
-    cis_mode: enforce   # 'audit' for audit-only runs
+    # default to audit unless explicitly overridden
+    cis_mode: "{{ cis_mode | default('audit') }}"
+
   roles:
-    - cis_ubuntu
+    - role: cis_ubuntu
+    - role: audit_compliance

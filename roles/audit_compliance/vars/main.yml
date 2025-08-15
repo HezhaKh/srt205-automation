@@ -1,0 +1,5 @@
+---
+# Where to write reports on the controller
+report_output_dir: "{{ playbook_dir }}/reports"
+# Per-host report filename
+report_filename: "compliance_report_{{ inventory_hostname }}_{{ ansible_date_time.date }}.md"

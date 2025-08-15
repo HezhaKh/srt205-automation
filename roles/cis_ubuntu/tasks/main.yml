@@ -1,33 +1,24 @@
 ---
-- import_tasks: packages.yml
+- name: Include package tasks
+  ansible.builtin.import_tasks: packages.yml
   tags: [packages]
 
-- import_tasks: auth.yml
+- name: Include auth (login.defs + pwquality)
+  ansible.builtin.import_tasks: auth.yml
   tags: [auth]
 
-- import_tasks: ssh.yml
+- name: Include ssh hardening
+  ansible.builtin.import_tasks: ssh.yml
   tags: [ssh]
 
-- import_tasks: sysctl.yml
+- name: Include kernel/sysctl tasks
+  ansible.builtin.import_tasks: sysctl.yml
   tags: [sysctl]
 
-- import_tasks: services.yml
+- name: Include services (auditd, rsyslog, ufw)
+  ansible.builtin.import_tasks: services.yml
   tags: [services]
 
-- name: Build audit summary (controller-side print)
-  when: cis_mode == 'audit'
-  vars:
-    _login: "{{ login_defs_result.stdout_lines | default([]) }}"
-    _pwq:   "{{ pwquality_lines.stdout_lines | default([]) }}"
-    _sshd:  "{{ sshd_effective.stdout_lines | default([]) }}"
-    _sys:   "{{ sysctl_out.stdout_lines | default([]) }}"
-    _ufw:   "{{ ufw_status.stdout_lines | default([]) }}"
-  debug:
-    msg:
-      mode: "{{ cis_mode }}"
-      missing_packages: "{{ missing_packages | default([]) }}"
-      login_defs: "{{ _login }}"
-      pwquality: "{{ _pwq }}"
-      sshd: "{{ _sshd }}"
-      sysctl: "{{ _sys }}"
-      ufw: "{{ _ufw }}"
+- name: Include audit summary
+  ansible.builtin.import_tasks: audit.yml
+  tags: [audit]

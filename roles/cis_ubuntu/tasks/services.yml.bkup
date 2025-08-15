@@ -1,0 +1,77 @@
+---
+# auditd & rsyslog & unattended-upgrades
+- name: Ensure auditd is enabled and running
+  ansible.builtin.systemd:
+    name: auditd
+    state: started
+    enabled: true
+
+- name: Ensure rsyslog is enabled and running
+  ansible.builtin.systemd:
+    name: rsyslog
+    state: started
+    enabled: true
+
+- name: Ensure unattended-upgrades service is enabled
+  ansible.builtin.systemd:
+    name: unattended-upgrades
+    state: started
+    enabled: true
+
+# UFW - Read current status so we can gate changes
+#- name: Check UFW status (read-only)
+#  ansible.builtin.command: ufw status verbose
+#  register: ufw_status
+#  changed_when: false
+#  failed_when: false
+#
+# Only set the default policy if it's not already deny
+#- name: Check UFW status (read-only)
+#  ansible.builtin.command: ufw status verbose
+#  register: ufw_status
+#  changed_when: false
+#  failed_when: false
+#
+# Only set default policy if it's not already 'deny (incoming)'
+#- name: Set default policy to deny incoming (only if needed)
+#  community.general.ufw:
+#    direction: incoming
+#    policy: deny
+#  when: "'Default: deny (incoming)' not in ufw_status.stdout"
+#
+# Ensure the canonical SSH rule exists (tcp, IPv4&v6)
+#- name: Allow SSH on {{ cis_ssh_port | default(22) }}/tcp
+#  community.general.ufw:
+#    rule: allow
+#    port: "{{ cis_ssh_port | default(22) }}"
+#    proto: tcp
+
+# Default deny inbound
+- name: Default deny inbound
+  community.general.ufw:
+    direction: incoming
+    policy: deny
+  register: ufw_deny
+  when: ufw_deny.changed is not defined or ufw_deny.changed
+
+# Allow SSH (v4 + v6) on configured port
+- name: Allow SSH on {{ cis_ssh_port | default(22) }}/tcp
+  community.general.ufw:
+    rule: allow
+    port: "{{ cis_ssh_port | default(22) }}"
+    proto: tcp
+  register: ufw_allow_ssh
+  when: ufw_allow_ssh.changed is not defined or ufw_allow_ssh.changed
+
+# Make sure UFW is enabled 
+- name: Enable UFW
+  community.general.ufw:
+    state: enabled
+  register: ufw_enable
+  when: ufw_enable.changed is not defined or ufw_enable.changed
+
+# Audit
+- name: Audit UFW status
+  ansible.builtin.command: ufw status verbose
+  register: ufw_status
+  changed_when: false

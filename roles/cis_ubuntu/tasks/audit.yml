@@ -9,3 +9,7 @@
       sshd: "{{ _sshd.stdout_lines | default([]) }}"
       sysctl: "{{ _sysctl.stdout_lines | default([]) }}"
       ufw: "{{ _ufw.stdout_lines | default([]) }}"
+      cron_at: "{{ _cron_at.stdout_lines | default([]) }}"
+      tmp_mount: "{{ _tmp_mount.stdout_lines | default([]) }}"
+      timesync: "{{ _timesync.stdout_lines | default([]) }}"
+      sudo_log: "{{ _sudo_log.stdout_lines | default([]) }}"

@@ -1,37 +1,69 @@
 ---
 # /etc/login.defs
 - name: Configure password aging in /etc/login.defs
-  lineinfile:
+  ansible.builtin.lineinfile:
     path: /etc/login.defs
     regexp: "^{{ item.key }}\\b"
     line: "{{ item.key }}\t{{ item.value }}"
     state: present
-    backrefs: false
-  loop: "{{ cis_login_defs | dict2items }}"
+    create: no
+    backup: yes
+  loop: "{{ cis_password_aging | dict2items }}"
   when: cis_mode == 'enforce'
 
 - name: Audit password aging values
-  command: "awk '/^(PASS_MAX_DAYS|PASS_MIN_DAYS|PASS_WARN_AGE)/{print}' /etc/login.defs"
-  register: login_defs_result
+  ansible.builtin.command: >
+    awk '/^(PASS_MAX_DAYS|PASS_MIN_DAYS|PASS_WARN_AGE)/{print}' /etc/login.defs
+  register: _login_defs
   changed_when: false
-  failed_when: false
-  when: cis_mode == 'audit'
 
 # /etc/security/pwquality.conf
 - name: Configure pwquality minimums
-  lineinfile:
+  ansible.builtin.lineinfile:
     path: /etc/security/pwquality.conf
-    regexp: "^{{ item.key }}\\s*="
+    regexp: "^\\s*{{ item.key }}\\s*="
     line: "{{ item.key }} = {{ item.value }}"
     state: present
-    backrefs: false
     create: yes
+    backup: yes
   loop: "{{ cis_pwquality | dict2items }}"
   when: cis_mode == 'enforce'
 
 - name: Audit pwquality.conf
-  shell: "grep -E '^(minlen|dcredit|ucredit|lcredit|ocredit|retry)\\s*=' /etc/security/pwquality.conf || true"
-  register: pwquality_lines
+  ansible.builtin.shell: |
+    grep -E '^(minlen|dcredit|ucredit|lcredit|ocredit|retry)\s*=' /etc/security/pwquality.conf || true
+  args: { executable: /bin/bash }
+  register: _pwq
   changed_when: false
-  failed_when: false
-  when: cis_mode == 'audit'
+
+# Ensure sudo log file exists
+- name: Ensure sudo logging is configured via drop-in
+  ansible.builtin.lineinfile:
+    path: /etc/sudoers.d/10-logfile
+    create: yes
+    mode: "0440"
+    owner: root
+    group: root
+    line: "Defaults logfile=/var/log/sudo.log"
+    state: present
+    validate: 'visudo -cf %s'
+  when: cis_mode == 'enforce'
+
+- name: Ensure sudo log file exists with secure perms
+  ansible.builtin.file:
+    path: /var/log/sudo.log
+    state: touch
+    owner: root
+    group: adm
+    mode: "0640"
+  when: cis_mode == 'enforce'
+
+# Audit
+- name: Audit sudo logging
+  ansible.builtin.shell: |
+    grep -E '^[[:space:]]*Defaults[[:space:]]+logfile=' /etc/sudoers /etc/sudoers.d/* 2>/dev/null || true
+    ls -l /var/log/sudo.log 2>/dev/null || true
+  args: { executable: /bin/bash }
+  register: _sudo_log
+  changed_when: false
+
