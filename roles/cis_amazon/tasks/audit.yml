@@ -1,0 +1,28 @@
+---
+# /tmp mount options (audit)
+- name: Audit /tmp mount options
+  ansible.builtin.shell: |
+    if command -v findmnt >/dev/null 2>&1; then
+      echo -n "OPTIONS: "
+      findmnt -no OPTIONS /tmp || true
+    else
+      mount | awk '$3=="/tmp"{print $0}'
+    fi
+  register: _tmp_mount
+  changed_when: false
+
+# Build audit summary & align variable names so audit_compliance template works as-is
+- name: Build audit summary (controller-side print)
+  ansible.builtin.debug:
+    msg:
+      mode: "{{ cis_mode }}"
+      missing_packages: "{{ _missing_packages | default([]) }}"
+      login_defs: "{{ _login_defs.stdout_lines | default([]) }}"
+      pwquality: "{{ _pwq.stdout_lines | default([]) }}"
+      sshd: "{{ _sshd | default([]) }}"
+      sysctl: "{{ _sysctl.stdout_lines | default([]) }}"
+      # Map Firewalld output into _ufw so your existing template shows it
+      ufw: "{{ _firewalld.stdout_lines | default([]) }}"
+      cron_at: "{{ _cron_at.stdout_lines | default([]) }}"
+      tmp_mount: "{{ _tmp_mount.stdout_lines | default([]) }}"
+      timesync: "{{ _timesync.stdout_lines | default([]) }}"

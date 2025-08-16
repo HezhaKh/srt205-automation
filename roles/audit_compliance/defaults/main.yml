@@ -1,0 +1,46 @@
+---
+# Defaults for the audit_compliance role
+
+# Mode: "audit" (do not change system) or "enforce" (apply desired state)
+ac_mode: "{{ cis_mode | default('audit') }}"
+
+# Where to save the Markdown report on the controller
+ac_report_dir_controller: "{{ playbook_dir }}/reports"
+ac_report_filename: "compliance_report_{{ inventory_hostname }}_{{ (ansible_date_time.date | default('NODATE')) }}.md"
+ac_report_path_controller: "{{ ac_report_dir_controller }}/{{ ac_report_filename }}"
+
+# Sysctl baseline (can be overridden with ac_sysctl_overrides)
+ac_sysctl_defaults:
+  net.ipv4.ip_forward: 0
+  net.ipv4.conf.all.accept_redirects: 0
+  net.ipv4.conf.default.accept_redirects: 0
+  net.ipv4.conf.all.send_redirects: 0
+  net.ipv4.conf.default.send_redirects: 0
+  net.ipv4.conf.all.accept_source_route: 0
+  net.ipv4.conf.default.accept_source_route: 0
+  net.ipv4.icmp_echo_ignore_broadcasts: 1
+  net.ipv4.icmp_ignore_bogus_error_responses: 1
+  net.ipv4.tcp_syncookies: 1
+  kernel.randomize_va_space: 2
+  fs.suid_dumpable: 0
+
+# Allow per-env overrides
+ac_sysctl_overrides: {}
+
+# Critical file ownership/perm baseline
+ac_file_defaults:
+  - path: /etc/passwd
+    owner: root
+    group: root
+    mode: "0644"
+  - path: /etc/shadow
+    owner: root
+    group: root
+    mode: "0640"
+  - path: /etc/group
+    owner: root
+    group: root
+    mode: "0644"
+
+# Optional per-host overrides
+ac_file_overrides: []

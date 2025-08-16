@@ -1,3 +1,11 @@
+# SRT205 CIS Hardening Project
+
+This repo applies a minimal CIS-style hardening baseline to:
+- **Ubuntu** (group: `ubuntu`) using UFW
+- **Amazon Linux 2** (group: `amazon`) using firewalld / dnf-automatic
+
+It also generates Markdown compliance reports and JSON evidence.
+
 ### How to run (Ubuntu role)
 Prereqs: Ansible, SSH access to targets, Python 3 on hosts.
 
@@ -21,3 +29,6 @@ Prereqs: Ansible, SSH access to targets, Python 3 on hosts.
 - Kernel/sysctl: `--tags sysctl`
 - Services (auditd/rsyslog/ufw/time): `--tags services`
 - Reporting: handled by `audit_compliance` at the end of the play
+
+**Future work:**
+NA

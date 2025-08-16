@@ -1,22 +1,42 @@
-## CIS Ubuntu – Final Summary
+## CIS Ubuntu and amazon – Final Summary
 
-**Scope:** Single host `db_node01` audited and hardened using Ansible roles `cis_ubuntu` and `audit_compliance`.
+**Project:** CIS-style Baseline for Ubuntu & Amazon Linux 2
+
+## Scope & Approach
+
+- Implemented separate hardening roles:
+  - `cis_ubuntu` (UFW, pwquality, login.defs, sshd, sysctl, timesync, unattended-upgrades)
+  - `cis_amazon` (firewalld, pwquality, login.defs, sshd, sysctl, chronyd, dnf-automatic)
+- Common reporting via `audit_compliance` role:
+  - Enforces and/or audits a minimal sysctl baseline and critical file permissions
+  - Writes JSON to `/var/tmp/audit_compliance_report.json`
+  - Renders controller-side Markdown into `reports/`
 
 **Key Controls Implemented:**
-- Password aging (`/etc/login.defs`) and complexity (`/etc/security/pwquality.conf`)
-- SSH hardening via drop-in (`/etc/ssh/sshd_config.d/10-ansible.conf`) with:
-  - `PermitRootLogin no`, `PasswordAuthentication no`, `MaxAuthTries 4`,
-  - `ClientAliveInterval 300`, `ClientAliveCountMax 3`, `LogLevel VERBOSE`
-- Kernel hardening (`ASLR`, core dumps, `ptrace_scope`)
-- Logging services (`auditd`, `rsyslog`) enabled and active
-- Firewall (`ufw`) active with default deny inbound and SSH allowed
-- Time sync: `systemd-timesyncd` enabled/active
-- `cron/at` restrictions: only root allowed
-- Sudo logging to `/var/log/sudo.log` (drop-in validated)
+- Completed without task failures.
+- **Noncompliant sysctl items detected (4):**
+  - `net.ipv4.conf.all.send_redirects`
+  - `net.ipv4.conf.default.send_redirects`
+  - `net.ipv4.conf.default.accept_source_route`
+  - `fs.suid_dumpable` (actual: `2`)
+- UFW active; SSH allowed on 22/tcp; defaults deny incoming, allow outgoing.
+- Evidence and report written under `docs/evidence/` and `reports/`.
+
+### Amazon Linux 2 group (`-l amazon`, mode: **enforce**)
+- Completed without task failures.
+- **No remaining sysctl drift** (12 checked, 0 noncompliant).
+- firewalld enabled; chronyd active; auto-updates configured via `dnf-automatic`.
+- Evidence and report written under `docs/evidence/` and `reports/`.
+
+## Remediation Notes (amazon)
+- Switch to enforce to remediate automatically:
+```bash
+  ansible-playbook -i inventory/hosts.ini site.yml -e "cis_mode=enforce" -l amazon
+```
 
 **Evidence:**
-- Audit log: `docs/evidence/ubuntu_audit_<timestamp>.log`
-- Enforce log: `docs/evidence/ubuntu_enforce_<timestamp>.log`
+- Audit log: `docs/evidence/amazon_audit_<timestamp>.log`
+- Enforce log: `docs/evidence/amazon_enforce_<timestamp>.log`
 - Compliance report: `reports/compliance_report_db_node01_<date>.md` (No non-compliance detected)
 
 **Idempotency Results:** Subsequent runs show zero drift (`ok` state, minimal `changed`).
@@ -25,7 +45,3 @@
 - Report initially wrote to remote → fixed with `delegate_to: localhost`.
 - Jinja templating with mixed result/list types → normalized to line lists in `audit_compliance`.
 - Robust SSHD parsing (context `-C`, lowercase, regex-safe extraction) eliminated false positives.
-
-**Improvements (future):**
-- Add GitHub Actions to run `ansible-lint` and `--syntax-check`.
-- Optional CI fail gate when `non_compliant_items` > 0.

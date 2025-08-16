@@ -1,0 +1,15 @@
+---
+- name: Restart sshd
+  ansible.builtin.service:
+    name: sshd
+    state: restarted
+
+- name: Reload firewalld
+  ansible.builtin.command: firewall-cmd --reload
+  when: ansible_facts.services is not defined or ('firewalld.service' in ansible_facts.services)
+  changed_when: false
+
+- name: Restart rsyslog
+  ansible.builtin.service:
+    name: rsyslog
+    state: restarted

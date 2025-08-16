@@ -1,0 +1,36 @@
+---
+# roles/cis_amazon/tasks/packages.yml
+
+- name: Baseline packages list
+  set_fact:
+    # If you define cis_packages_base_common in defaults, we'll use that.
+    # Otherwise fall back to a sensible default for Amazon Linux 2/2023.
+    _baseline_packages_common: "{{ cis_packages_base_common | default(['libpwquality','audit','rsyslog','firewalld']) }}"
+
+# Install packages only when enforcing
+- name: Install baseline packages (Amazon Linux)
+  when: cis_mode | default('audit') == 'enforce'
+  package:
+    name: "{{ _baseline_packages_common }}"
+    state: present
+  register: _pkg_install
+
+# Audit presence only when auditing
+- name: Audit baseline packages presence
+  when: cis_mode | default('audit') == 'audit'
+  command: "bash -lc 'rpm -q {{ item }}'"
+  changed_when: false
+  failed_when: false
+  loop: "{{ _baseline_packages_common }}"
+  register: _pkg_audit
+
+- name: Record missing baseline packages (audit)
+  when: cis_mode | default('audit') == 'audit'
+  set_fact:
+    missing_packages: >-
+      {{
+        _pkg_audit.results
+        | selectattr('rc','ne',0)
+        | map(attribute='item')
+        | list
+      }}

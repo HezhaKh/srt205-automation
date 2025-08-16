@@ -1,0 +1,24 @@
+---
+- name: Include package tasks
+  ansible.builtin.import_tasks: packages.yml
+  tags: [packages]
+
+- name: Include auth tasks
+  ansible.builtin.import_tasks: auth.yml
+  tags: [auth]
+
+- name: Include ssh tasks
+  ansible.builtin.import_tasks: ssh.yml
+  tags: [ssh]
+
+- name: Include sysctl tasks
+  ansible.builtin.import_tasks: sysctl.yml
+  tags: [sysctl]
+
+- name: Include services tasks
+  ansible.builtin.import_tasks: services.yml
+  tags: [services]
+
+- name: Include audit summary builder
+  ansible.builtin.import_tasks: audit.yml
+  tags: [audit]

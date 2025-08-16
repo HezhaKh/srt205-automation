@@ -1,0 +1,51 @@
+---
+# ASLR
+- name: Ensure ASLR is enabled
+  ansible.posix.sysctl:
+    name: kernel.randomize_va_space
+    value: "2"
+    state: present
+    ignoreerrors: true
+    sysctl_set: true
+    reload: true
+  when: cis_mode == 'enforce'
+
+# Core dumps restricted
+- name: Restrict core dumps
+  ansible.posix.sysctl:
+    name: fs.suid_dumpable
+    value: "0"
+    state: present
+    ignoreerrors: true
+    sysctl_set: true
+    reload: true
+  when: cis_mode == 'enforce'
+
+# ptrace_scope only if kernel yama exists (Amazon Linux 2 may not have it)
+- name: Check for yama ptrace_scope
+  ansible.builtin.stat:
+    path: /proc/sys/kernel/yama/ptrace_scope
+  register: _yama_stat
+
+- name: Restrict ptrace_scope (if supported)
+  ansible.posix.sysctl:
+    name: kernel.yama.ptrace_scope
+    value: "1"
+    state: present
+    ignoreerrors: true
+    sysctl_set: true
+    reload: true
+  when: cis_mode == 'enforce' and _yama_stat.stat.exists
+
+# Audit current values (only keys that exist)
+- name: Audit kernel/sysctl hardening
+  ansible.builtin.shell: |
+    for k in kernel.randomize_va_space fs.suid_dumpable kernel.yama.ptrace_scope; do
+      if sysctl -a 2>/dev/null | grep -q "^$k"; then
+        sysctl $k
+      fi
+    done
+  args:
+    executable: /bin/bash
+  register: _sysctl
+  changed_when: false

@@ -1,0 +1,9 @@
+# Managed by Ansible - CIS baseline
+Port {{ cis_ssh_port }}
+PermitRootLogin no
+PasswordAuthentication no
+MaxAuthTries 4
+ClientAliveInterval 300
+ClientAliveCountMax 3
+X11Forwarding no
+LogLevel VERBOSE

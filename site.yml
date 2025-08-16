@@ -1,13 +1,21 @@
 ---
+# Run with: ansible-playbook -i inventory/hosts.ini site.yml -e "cis_mode=audit|enforce"
+
 - name: CIS Ubuntu
-  hosts: linux_servers
+  hosts: ubuntu
   become: true
-  gather_facts: true
-
-  vars:
-    # default to audit unless explicitly overridden
-    cis_mode: "{{ cis_mode | default('audit') }}"
-
   roles:
     - role: cis_ubuntu
+
+- name: CIS Amazon Linux 2
+  hosts: amazon
+  become: true
+  roles:
+    - role: cis_amazon
+
+# Build the unified report for both groups
+- name: Compliance report
+  hosts: ubuntu:amazon
+  become: true
+  roles:
     - role: audit_compliance

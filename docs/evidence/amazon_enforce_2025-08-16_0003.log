@@ -1,0 +1,309 @@
+
+PLAY [CIS Ubuntu] **************************************************************
+skipping: no hosts matched
+
+PLAY [CIS Amazon Linux 2] ******************************************************
+
+TASK [Gathering Facts] *********************************************************
+ok: [amazon_node01]
+
+TASK [cis_amazon : Baseline packages list] *************************************
+ok: [amazon_node01]
+
+TASK [cis_amazon : Install baseline packages (Amazon Linux)] *******************
+ok: [amazon_node01]
+
+TASK [cis_amazon : Audit baseline packages presence] ***************************
+skipping: [amazon_node01] => (item=libpwquality) 
+skipping: [amazon_node01] => (item=audit) 
+skipping: [amazon_node01] => (item=rsyslog) 
+skipping: [amazon_node01] => (item=firewalld) 
+skipping: [amazon_node01] => (item=dnf-automatic) 
+skipping: [amazon_node01]
+
+TASK [cis_amazon : Record missing baseline packages (audit)] *******************
+skipping: [amazon_node01]
+
+TASK [cis_amazon : Configure password aging in /etc/login.defs] ****************
+ok: [amazon_node01] => (item={'key': 'PASS_MAX_DAYS', 'value': 90})
+ok: [amazon_node01] => (item={'key': 'PASS_MIN_DAYS', 'value': 1})
+ok: [amazon_node01] => (item={'key': 'PASS_WARN_AGE', 'value': 7})
+
+TASK [cis_amazon : Audit password aging values] ********************************
+ok: [amazon_node01]
+
+TASK [cis_amazon : Configure pwquality minimums] *******************************
+ok: [amazon_node01] => (item={'key': 'minlen', 'value': 12})
+ok: [amazon_node01] => (item={'key': 'dcredit', 'value': -1})
+ok: [amazon_node01] => (item={'key': 'ucredit', 'value': -1})
+ok: [amazon_node01] => (item={'key': 'lcredit', 'value': -1})
+ok: [amazon_node01] => (item={'key': 'ocredit', 'value': -1})
+ok: [amazon_node01] => (item={'key': 'retry', 'value': 3})
+
+TASK [cis_amazon : Audit pwquality.conf] ***************************************
+ok: [amazon_node01]
+
+TASK [cis_amazon : Ensure sudo logging is configured via drop-in] **************
+ok: [amazon_node01]
+
+TASK [cis_amazon : Ensure sudo log file exists with secure perms] **************
+changed: [amazon_node01]
+
+TASK [cis_amazon : Audit sudo logging] *****************************************
+ok: [amazon_node01]
+
+TASK [cis_amazon : Build audit summary (controller-side print)] ****************
+ok: [amazon_node01] => {
+    "msg": {
+        "cron_at": [],
+        "login_defs": [
+            "PASS_MAX_DAYS\t90",
+            "PASS_MIN_DAYS\t1",
+            "PASS_WARN_AGE\t7"
+        ],
+        "mode": "enforce",
+        "pwquality": [
+            "minlen = 12",
+            "dcredit = -1",
+            "ucredit = -1",
+            "lcredit = -1",
+            "ocredit = -1",
+            "retry = 3"
+        ],
+        "sshd": [],
+        "sudo_log": [
+            "/etc/sudoers.d/10-logfile:Defaults logfile=/var/log/sudo.log",
+            "-rw-r-----. 1 root adm 600921 Aug 16 04:04 /var/log/sudo.log"
+        ],
+        "sysctl": [],
+        "timesync": [],
+        "tmp_mount": [],
+        "ufw": []
+    }
+}
+
+TASK [cis_amazon : Check if sshd drop-in directory exists] *********************
+ok: [amazon_node01]
+
+TASK [cis_amazon : Template hardened sshd drop-in (if supported)] **************
+ok: [amazon_node01]
+
+TASK [cis_amazon : Harden /etc/ssh/sshd_config in-place (when drop-in not supported)] ***
+skipping: [amazon_node01] => (item={'key': 'Port', 'value': 22}) 
+skipping: [amazon_node01] => (item={'key': 'PermitRootLogin', 'value': 'no'}) 
+skipping: [amazon_node01] => (item={'key': 'PasswordAuthentication', 'value': 'no'}) 
+skipping: [amazon_node01] => (item={'key': 'MaxAuthTries', 'value': '4'}) 
+skipping: [amazon_node01] => (item={'key': 'ClientAliveInterval', 'value': '300'}) 
+skipping: [amazon_node01] => (item={'key': 'ClientAliveCountMax', 'value': '3'}) 
+skipping: [amazon_node01] => (item={'key': 'X11Forwarding', 'value': 'no'}) 
+skipping: [amazon_node01] => (item={'key': 'LogLevel', 'value': 'VERBOSE'}) 
+skipping: [amazon_node01]
+
+TASK [cis_amazon : Audit sshd effective settings] ******************************
+ok: [amazon_node01]
+
+TASK [cis_amazon : Normalize sshd audit lines for report] **********************
+ok: [amazon_node01]
+
+TASK [cis_amazon : Ensure ASLR is enabled] *************************************
+ok: [amazon_node01]
+
+TASK [cis_amazon : Restrict core dumps] ****************************************
+ok: [amazon_node01]
+
+TASK [cis_amazon : Check for yama ptrace_scope] ********************************
+ok: [amazon_node01]
+
+TASK [cis_amazon : Restrict ptrace_scope (if supported)] ***********************
+ok: [amazon_node01]
+
+TASK [cis_amazon : Audit kernel/sysctl hardening] ******************************
+ok: [amazon_node01]
+
+TASK [cis_amazon : Gather service facts] ***************************************
+ok: [amazon_node01]
+
+TASK [cis_amazon : Detect auditd via systemctl (authoritative)] ****************
+ok: [amazon_node01]
+
+TASK [cis_amazon : Finalize auditd unit name] **********************************
+ok: [amazon_node01]
+
+TASK [cis_amazon : Ensure auditd is enabled and running (if available)] ********
+ok: [amazon_node01]
+
+TASK [cis_amazon : Audit auditd status] ****************************************
+ok: [amazon_node01]
+
+TASK [cis_amazon : Ensure rsyslog is enabled and running (enforce)] ************
+ok: [amazon_node01]
+
+TASK [cis_amazon : Audit rsyslog status] ***************************************
+ok: [amazon_node01]
+
+TASK [cis_amazon : Enable firewalld (enforce) when selected] *******************
+ok: [amazon_node01]
+
+TASK [cis_amazon : Audit firewalld state] **************************************
+ok: [amazon_node01]
+
+TASK [cis_amazon : Enable and start chronyd (enforce)] *************************
+ok: [amazon_node01]
+
+TASK [cis_amazon : Disable/stop ntpd if present (enforce)] *********************
+ok: [amazon_node01]
+
+TASK [cis_amazon : Audit time sync services] ***********************************
+ok: [amazon_node01]
+
+TASK [cis_amazon : Pick available auto-update mechanism] ***********************
+ok: [amazon_node01]
+
+TASK [cis_amazon : Ensure dnf-automatic apply_updates is set (AL2023+)] ********
+ok: [amazon_node01]
+
+TASK [cis_amazon : Enable auto-update mechanism (yum-cron or dnf-automatic.timer)] ***
+ok: [amazon_node01]
+
+TASK [cis_amazon : Audit /tmp mount options] ***********************************
+ok: [amazon_node01]
+
+TASK [cis_amazon : Build audit summary (controller-side print)] ****************
+ok: [amazon_node01] => {
+    "msg": {
+        "cron_at": [],
+        "login_defs": [
+            "PASS_MAX_DAYS\t90",
+            "PASS_MIN_DAYS\t1",
+            "PASS_WARN_AGE\t7"
+        ],
+        "missing_packages": [],
+        "mode": "enforce",
+        "pwquality": [
+            "minlen = 12",
+            "dcredit = -1",
+            "ucredit = -1",
+            "lcredit = -1",
+            "ocredit = -1",
+            "retry = 3"
+        ],
+        "sshd": [],
+        "sysctl": [
+            "kernel.randomize_va_space = 2",
+            "fs.suid_dumpable = 0",
+            "kernel.yama.ptrace_scope = 1"
+        ],
+        "timesync": [],
+        "tmp_mount": [
+            "OPTIONS: rw,nosuid,nodev,seclabel,nr_inodes=1048576"
+        ],
+        "ufw": []
+    }
+}
+
+PLAY [Compliance report] *******************************************************
+
+TASK [Gathering Facts] *********************************************************
+ok: [amazon_node01]
+
+TASK [audit_compliance : Determine audit/enforce mode (default = audit)] *******
+ok: [amazon_node01]
+
+TASK [audit_compliance : Define sysctl defaults] *******************************
+ok: [amazon_node01]
+
+TASK [audit_compliance : Build sysctl target map (allow overrides)] ************
+ok: [amazon_node01]
+
+TASK [audit_compliance : Define file permission defaults] **********************
+ok: [amazon_node01]
+
+TASK [audit_compliance : Build file target list (allow overrides)] *************
+ok: [amazon_node01]
+
+TASK [audit_compliance : Enforce sysctl baseline] ******************************
+ok: [amazon_node01] => (item=net.ipv4.ip_forward)
+ok: [amazon_node01] => (item=net.ipv4.conf.all.accept_redirects)
+ok: [amazon_node01] => (item=net.ipv4.conf.default.accept_redirects)
+ok: [amazon_node01] => (item=net.ipv4.conf.all.send_redirects)
+ok: [amazon_node01] => (item=net.ipv4.conf.default.send_redirects)
+ok: [amazon_node01] => (item=net.ipv4.conf.all.accept_source_route)
+ok: [amazon_node01] => (item=net.ipv4.conf.default.accept_source_route)
+ok: [amazon_node01] => (item=net.ipv4.icmp_echo_ignore_broadcasts)
+ok: [amazon_node01] => (item=net.ipv4.icmp_ignore_bogus_error_responses)
+ok: [amazon_node01] => (item=net.ipv4.tcp_syncookies)
+ok: [amazon_node01] => (item=kernel.randomize_va_space)
+ok: [amazon_node01] => (item=fs.suid_dumpable)
+
+TASK [audit_compliance : Enforce critical file ownership/permissions] **********
+skipping: [amazon_node01]
+
+TASK [audit_compliance : Audit sysctl values] **********************************
+ok: [amazon_node01] => (item=net.ipv4.ip_forward)
+ok: [amazon_node01] => (item=net.ipv4.conf.all.accept_redirects)
+ok: [amazon_node01] => (item=net.ipv4.conf.default.accept_redirects)
+ok: [amazon_node01] => (item=net.ipv4.conf.all.send_redirects)
+ok: [amazon_node01] => (item=net.ipv4.conf.default.send_redirects)
+ok: [amazon_node01] => (item=net.ipv4.conf.all.accept_source_route)
+ok: [amazon_node01] => (item=net.ipv4.conf.default.accept_source_route)
+ok: [amazon_node01] => (item=net.ipv4.icmp_echo_ignore_broadcasts)
+ok: [amazon_node01] => (item=net.ipv4.icmp_ignore_bogus_error_responses)
+ok: [amazon_node01] => (item=net.ipv4.tcp_syncookies)
+ok: [amazon_node01] => (item=kernel.randomize_va_space)
+ok: [amazon_node01] => (item=fs.suid_dumpable)
+
+TASK [audit_compliance : Collate noncompliant sysctl entries] ******************
+skipping: [amazon_node01] => (item=net.ipv4.ip_forward) 
+skipping: [amazon_node01] => (item=net.ipv4.conf.all.accept_redirects) 
+skipping: [amazon_node01] => (item=net.ipv4.conf.default.accept_redirects) 
+skipping: [amazon_node01] => (item=net.ipv4.conf.all.send_redirects) 
+skipping: [amazon_node01] => (item=net.ipv4.conf.default.send_redirects) 
+skipping: [amazon_node01] => (item=net.ipv4.conf.all.accept_source_route) 
+skipping: [amazon_node01] => (item=net.ipv4.conf.default.accept_source_route) 
+skipping: [amazon_node01] => (item=net.ipv4.icmp_echo_ignore_broadcasts) 
+skipping: [amazon_node01] => (item=net.ipv4.icmp_ignore_bogus_error_responses) 
+skipping: [amazon_node01] => (item=net.ipv4.tcp_syncookies) 
+skipping: [amazon_node01] => (item=kernel.randomize_va_space) 
+skipping: [amazon_node01] => (item=fs.suid_dumpable) 
+skipping: [amazon_node01]
+
+TASK [audit_compliance : Audit file permissions/ownership] *********************
+skipping: [amazon_node01]
+
+TASK [audit_compliance : Collate noncompliant files] ***************************
+skipping: [amazon_node01]
+
+TASK [audit_compliance : Build compliance report] ******************************
+ok: [amazon_node01]
+
+TASK [audit_compliance : Write compliance report to /var/tmp] ******************
+ok: [amazon_node01]
+
+TASK [audit_compliance : Summary] **********************************************
+ok: [amazon_node01] => {
+    "msg": [
+        "audit_compliance mode: enforce",
+        "Sysctl checked: 12, noncompliant: 0",
+        "Files checked:  0, noncompliant: 0",
+        "Report: /var/tmp/audit_compliance_report.json"
+    ]
+}
+
+TASK [audit_compliance : Fail if drift remains in enforce mode] ****************
+skipping: [amazon_node01]
+
+TASK [audit_compliance : Ensure report directory exists (controller)] **********
+ok: [amazon_node01 -> localhost]
+
+TASK [audit_compliance : Read audit_compliance JSON from the host] *************
+ok: [amazon_node01]
+
+TASK [audit_compliance : Parse audit_compliance JSON] **************************
+ok: [amazon_node01]
+
+TASK [audit_compliance : Ensure local reports dir exists] **********************
+ok: [amazon_node01 -> localhost]
+
+PLAY RECAP *********************************************************************
+amazon_node01              : ok=52   changed=1    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
+

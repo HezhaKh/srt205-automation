@@ -1,0 +1,61 @@
+---
+- name: Check if sshd drop-in directory exists
+  ansible.builtin.stat:
+    path: /etc/ssh/sshd_config.d
+  register: _sshd_dropin_dir
+
+# Prefer drop-in when available; otherwise edit main config safely
+- name: Template hardened sshd drop-in (if supported)
+  ansible.builtin.template:
+    src: sshd_10-ansible.conf.j2
+    dest: "{{ cis_sshd_dropin_path }}"
+    owner: root
+    group: root
+    mode: "0600"
+  notify: Restart sshd
+  when: cis_mode == 'enforce' and _sshd_dropin_dir.stat.exists | default(false)
+
+- name: Harden /etc/ssh/sshd_config in-place (when drop-in not supported)
+  ansible.builtin.lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: '^(?i){{ item.key }}\s+'
+    line: "{{ item.key }} {{ item.value }}"
+    backrefs: false
+    create: no
+  loop:
+    - { key: "Port", value: "{{ cis_ssh_port }}" }
+    - { key: "PermitRootLogin", value: "no" }
+    - { key: "PasswordAuthentication", value: "no" }
+    - { key: "MaxAuthTries", value: "4" }
+    - { key: "ClientAliveInterval", value: "300" }
+    - { key: "ClientAliveCountMax", value: "3" }
+    - { key: "X11Forwarding", value: "no" }
+    - { key: "LogLevel", value: "VERBOSE" }
+  notify: Restart sshd
+  when: cis_mode == 'enforce' and not (_sshd_dropin_dir.stat.exists | default(false))
+
+- name: Audit sshd effective settings
+  command: "sshd -T -C user=root -C host={{ inventory_hostname }} -C addr=127.0.0.1"
+  register: sshd_effective
+  changed_when: false
+
+# Back-compat with Ubuntu role: expose 'sshd'
+- name: Normalize sshd audit lines for report
+  set_fact:
+    sshd: "{{ (sshd_effective.stdout_lines | default([])) | map('lower') | list }}"
+
+
+# Audit sshd effective settings (resolve conditionals with -C)
+#- name: Audit sshd effective settings
+#  ansible.builtin.command: >
+#    sshd -T
+#    -C user=root
+#    -C host={{ ansible_facts.fqdn | default('localhost') }}
+#    -C addr=127.0.0.1
+#  register: _sshd_t
+#  changed_when: false
+#
+#- name: Normalize sshd audit lines for report
+#  ansible.builtin.set_fact:
+#    _sshd: "{{ _sshd_t.stdout | trim | split('\n') | map('lower') | list }}"
+#  changed_when: false

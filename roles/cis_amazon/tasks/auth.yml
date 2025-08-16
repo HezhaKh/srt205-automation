@@ -1,0 +1,78 @@
+---
+# /etc/login.defs
+- name: Configure password aging in /etc/login.defs
+  ansible.builtin.lineinfile:
+    path: /etc/login.defs
+    regexp: '^{{ item.key }}\s+'
+    line: "{{ item.key }}\t{{ item.value }}"
+    create: no
+    backrefs: no
+  loop: "{{ cis_login_defs }}"
+  when: cis_mode == 'enforce'
+
+- name: Audit password aging values
+  ansible.builtin.shell: |
+    awk '/^(PASS_MAX_DAYS|PASS_MIN_DAYS|PASS_WARN_AGE)\s+/ {print $1 "\t" $2}' /etc/login.defs
+  register: _login_defs
+  changed_when: false
+
+# /etc/security/pwquality.conf
+- name: Configure pwquality minimums
+  ansible.builtin.lineinfile:
+    path: /etc/security/pwquality.conf
+    regexp: '^\s*{{ item.key }}\s*='
+    line: "{{ item.key }} = {{ item.value }}"
+    create: yes
+    backrefs: no
+  loop: "{{ cis_pwquality_settings }}"
+  when: cis_mode == 'enforce'
+
+- name: Audit pwquality.conf
+  ansible.builtin.shell: |
+    egrep -i '^(minlen|dcredit|ucredit|lcredit|ocredit|retry)\s*=' /etc/security/pwquality.conf | sed 's/^[[:space:]]*//'
+  register: _pwq
+  changed_when: false
+
+# Sudo logging
+- name: Ensure sudo logging is configured via drop-in
+  ansible.builtin.lineinfile:
+    path: /etc/sudoers.d/10-logfile
+    line: "Defaults logfile=/var/log/sudo.log"
+    create: yes
+    mode: "0440"
+    owner: root
+    group: root
+    validate: 'visudo -cf %s'
+  when: cis_mode == 'enforce'
+
+- name: Ensure sudo log file exists with secure perms
+  ansible.builtin.file:
+    path: /var/log/sudo.log
+    state: touch
+    owner: root
+    group: adm
+    mode: "0640"
+  when: cis_mode == 'enforce'
+
+- name: Audit sudo logging
+  ansible.builtin.shell: |
+    { test -f /etc/sudoers.d/10-logfile && echo "/etc/sudoers.d/10-logfile:$(grep -E 'logfile=' -n /etc/sudoers.d/10-logfile | sed 's/^[0-9]\+://')"; true; }
+    { ls -l /var/log/sudo.log 2>/dev/null || true; }
+  register: _sudo_log
+  changed_when: false
+
+- name: Build audit summary (controller-side print)
+  ansible.builtin.debug:
+    msg:
+      mode: "{{ cis_mode }}"
+      login_defs: "{{ _login_defs.stdout_lines | default([]) }}"
+      pwquality: "{{ _pwq.stdout_lines | default([]) }}"
+      sudo_log: "{{ _sudo_log.stdout_lines | default([]) }}"
+      sshd: "{{ _sshd_eff.stdout_lines | default([]) }}"
+      sysctl: "{{ _sysctl_checks.stdout_lines | default([]) }}"
+      timesync: "{{ _timesync.stdout_lines | default([]) }}"
+      cron_at: "{{ _cron_at.stdout_lines | default([]) }}"
+      tmp_mount: "{{ _tmp_options.stdout_lines | default([]) }}"
+      # Map firewalld output into 'ufw' so the compliance role/template can reuse it
+      ufw: "{{ _firewalld_state.stdout_lines | default([]) }}"
+

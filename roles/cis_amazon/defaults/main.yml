@@ -1,0 +1,36 @@
+---
+# Mode: 'audit' (no changes) or 'enforce' (apply hardening)
+cis_mode: "audit"
+
+# SSH
+cis_ssh_port: 22
+cis_sshd_dropin_path: "/etc/ssh/sshd_config.d/10-ansible.conf"
+
+# Password aging (/etc/login.defs)
+cis_login_defs:
+  - { key: "PASS_MAX_DAYS", value: 90 }
+  - { key: "PASS_MIN_DAYS", value: 1 }
+  - { key: "PASS_WARN_AGE", value: 7 }
+
+# pwquality (/etc/security/pwquality.conf)
+cis_pwquality_settings:
+  - { key: "minlen", value: 12 }
+  - { key: "dcredit", value: -1 }
+  - { key: "ucredit", value: -1 }
+  - { key: "lcredit", value: -1 }
+  - { key: "ocredit", value: -1 }
+  - { key: "retry", value: 3 }
+
+# Manage Firewalld (vs. leaving networking to other tooling)
+cis_manage_firewall: true
+
+# Packages used by cis_amazon/tasks/packages.yml
+cis_packages_base_common:
+  - libpwquality
+  - audit
+  - rsyslog
+  - firewalld
+  - dnf-automatic
+
+# Keep ONLY ONE of this key in this file - deletes duplicates if present
+cis_enable_auto_updates: true

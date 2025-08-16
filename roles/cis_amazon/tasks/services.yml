@@ -1,0 +1,138 @@
+---
+# roles/cis_amazon/tasks/services.yml
+# Service hardening & audits for Amazon Linux 2
+# Idempotent; respects cis_mode: audit|enforce
+
+- name: Gather service facts
+  ansible.builtin.service_facts:
+
+# ---------- auditd ----------
+# Use systemctl as the source of truth; only manage auditd if its unit exists.
+- name: Detect auditd via systemctl (authoritative)
+  ansible.builtin.shell: |
+    if command -v systemctl >/dev/null 2>&1; then
+      systemctl list-unit-files --type=service --no-legend \
+        | awk '{print $1}' \
+        | grep -xq 'auditd.service' && echo auditd || echo ''
+    else
+      echo ''
+    fi
+  register: _auditd_detect
+  changed_when: false
+  failed_when: false
+
+- name: Finalize auditd unit name
+  ansible.builtin.set_fact:
+    _auditd_unit_name: "{{ _auditd_detect.stdout | trim }}"
+
+- name: Ensure auditd is enabled and running (if available)
+  ansible.builtin.service:
+    name: "{{ _auditd_unit_name }}"
+    enabled: true
+    state: started
+  when: cis_mode == 'enforce' and _auditd_unit_name != ''
+
+- name: Audit auditd status
+  ansible.builtin.shell: |
+    if [ -n "{{ _auditd_unit_name }}" ]; then
+      systemctl is-enabled "{{ _auditd_unit_name }}" 2>/dev/null || echo not-found
+      systemctl is-active  "{{ _auditd_unit_name }}" 2>/dev/null || echo not-found
+    else
+      echo not-found
+      echo not-found
+    fi
+  register: _auditd_status
+  changed_when: false
+  failed_when: false
+
+# ---------- rsyslog ----------
+- name: Ensure rsyslog is enabled and running (enforce)
+  ansible.builtin.service:
+    name: rsyslog
+    enabled: true
+    state: started
+  when: cis_mode == 'enforce'
+
+- name: Audit rsyslog status
+  ansible.builtin.shell: |
+    systemctl is-enabled rsyslog 2>/dev/null || echo not-found
+    systemctl is-active  rsyslog 2>/dev/null || echo not-found
+  register: _rsyslog_status
+  changed_when: false
+  failed_when: false
+
+# ---------- firewall (firewalld) ----------
+- name: Enable firewalld (enforce) when selected
+  ansible.builtin.service:
+    name: firewalld
+    enabled: true
+    state: started
+  when: cis_mode == 'enforce' and (cis_firewall | default('firewalld')) == 'firewalld'
+
+- name: Audit firewalld state
+  ansible.builtin.shell: |
+    firewall-cmd --state 2>/dev/null || echo not-found
+  register: _firewalld_state
+  changed_when: false
+  failed_when: false
+
+# ---------- time sync (chronyd preferred) ----------
+- name: Enable and start chronyd (enforce)
+  ansible.builtin.service:
+    name: chronyd
+    enabled: true
+    state: started
+  when: cis_mode == 'enforce'
+
+- name: Disable/stop ntpd if present (enforce)
+  ansible.builtin.service:
+    name: ntpd
+    enabled: false
+    state: stopped
+  when: cis_mode == 'enforce'
+  failed_when: false
+
+- name: Audit time sync services
+  ansible.builtin.shell: |
+    systemctl is-enabled chronyd 2>/dev/null || echo not-found
+    systemctl is-active  chronyd 2>/dev/null || echo not-found
+    systemctl is-enabled ntpd    2>/dev/null || echo not-found
+    systemctl is-active  ntpd    2>/dev/null || echo not-found
+  register: _timesync_status
+  changed_when: false
+  failed_when: false
+
+# ---------- automatic updates (yum-cron OR dnf-automatic.timer) ----------
+- name: Pick available auto-update mechanism
+  ansible.builtin.set_fact:
+    _auto_update_service: "{{ 'yum-cron' if (ansible_distribution_major_version | int) == 2 else 'dnf-automatic.timer' }}"
+    _auto_update_conf: "{{ '' if (ansible_distribution_major_version | int) == 2 else '/etc/dnf/automatic.conf' }}"
+
+- name: Ensure dnf-automatic apply_updates is set (AL2023+)
+  ansible.builtin.lineinfile:
+    path: "{{ _auto_update_conf }}"
+    regexp: '^apply_updates *= *'
+    line: 'apply_updates = yes'
+    backup: yes
+  when:
+    - cis_enable_auto_updates | default(true)
+    - (ansible_distribution_major_version | int) != 2
+
+- name: Enable auto-update mechanism (yum-cron or dnf-automatic.timer)
+  ansible.builtin.service:
+    name: "{{ _auto_update_service }}"
+    enabled: yes
+    state: started
+  when: cis_enable_auto_updates | default(true)
+
+# (Optional) controller-side summary
+- name: Controller-side summary (debug only)
+  ansible.builtin.debug:
+    msg:
+      auditd_unit: "{{ _auditd_unit_name | default('') }}"
+      auditd_status: "{{ _auditd_status.stdout_lines | default([]) }}"
+      rsyslog_status: "{{ _rsyslog_status.stdout_lines | default([]) }}"
+      firewalld_state: "{{ _firewalld_state.stdout_lines | default([]) }}"
+      timesync: "{{ _timesync_status.stdout_lines | default([]) }}"
+      auto_updates_unit: "{{ _auto_update_unit }}"
+  tags: [never, debug]

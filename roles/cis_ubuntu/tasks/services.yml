@@ -19,6 +19,11 @@
     enabled: true
 # UFW — idempotent
 
+- name: Check if UFW binary exists
+  stat:
+    path: /usr/sbin/ufw
+  register: ufw_bin
+
 # IMPORTANT: use verbose so we can see the "Default:" line
 - name: Check UFW status (verbose)
   ansible.builtin.command: ufw status verbose
