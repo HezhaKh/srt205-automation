@@ -1,5 +1,8 @@
 # SRT205 CIS Hardening Project
 
+## Project Demo Video
+`https://www.youtube.com/watch?v=QTdVvq_ng3U`
+
 This repo applies a minimal CIS-style hardening baseline to:
 - **Ubuntu** (group: `ubuntu`) using UFW
 - **Amazon Linux 2** (group: `amazon`) using firewalld / dnf-automatic
